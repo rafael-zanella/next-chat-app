@@ -1,5 +1,5 @@
 import { Avatar, Button, IconButton } from '@material-ui/core';
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import styled from 'styled-components';
 import {
   Chat as ChatIcon,
@@ -7,24 +7,71 @@ import {
   Search as SearchIcon,
 } from '@material-ui/icons';
 import * as EmailValidator from 'email-validator';
+import { auth, db } from '../../../firebase';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { addDoc, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore/lite';
+import { Chat } from '../Chat';
 
 
 const Sidebar = () => {
+  const [user] = useAuthState(auth);
+  const chatsRef = collection(db, 'chats');
+  const userChatRef = query(chatsRef, where('users', "array-contains", `${user.email}`))
 
-  const createChat = () => {
+  const [chatList, setChatList ] = useState([]);
+
+  const getChats = async () => {
+    const docSnap = await getDocs(userChatRef);
+    const data = docSnap.docs.map(doc => doc.data().users);
+    const dataFormatada = data.map(e => {
+      return {
+        recipientEmail: e.filter(email => email !== user.email),
+      }
+    })
+    console.log(dataFormatada);
+    setChatList(dataFormatada);
+  }
+
+  useEffect(() => {
+    getChats();
+  }, [])
+
+  const chatAlreadyExists = async (recipientEmail) => {
+    const docSnap = await getDocs(userChatRef);
+    return !!docSnap.docs.find(chat => chat.data().users.find(user => user === recipientEmail));
+  };
+
+  const validateEmail = async (email) => {
+    const validEmail = EmailValidator.validate(email);
+    const emailDifferentFromUser = email !== user.email
+    const chatExists = await chatAlreadyExists(email);
+    return validEmail && emailDifferentFromUser && !chatExists;
+  }
+
+  const createChat = async () => {
     const input = prompt('Prease enter an email address for the user you wish to chat with');
   
     if (!input) return null;
 
-    if (EmailValidator.validate(input)) {
-      // we need to add the chat into th db chats collection
+    const isValidEmail = await validateEmail(input);
+
+    if (isValidEmail) {
+      await addDoc(collection(db, "chats"), {
+        users: [user.email, input]
+      })
+      await getChats();
     }
+    
   }
 
   return(
     <Container>
         <Header>
-          <UserAvatar />
+          <UserAvatar
+            src={user?.photoURL ?? ''}
+            onClick={() => auth.signOut()}
+          />
 
           <IconsContainer>
             <IconButton>
@@ -45,8 +92,15 @@ const Sidebar = () => {
         <SidebarButton onClick={createChat}>
           Start a new chat
         </SidebarButton>
-
-        {/* list of chats */}
+        <div>
+        {
+          chatList && chatList.map(chat => (
+            <Chat key={chat.id} id={chat.id} recipientEmail={chat.recipientEmail} />
+          ))
+        }
+        </div>
+      
+        
     </Container>
   )
 }

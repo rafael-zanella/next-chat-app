@@ -3,9 +3,27 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../../firebase';
 import Login from './login';
 import { Loading } from '../components/Loading';
+import { serverTimestamp, setDoc, doc } from 'firebase/firestore/lite'
+import { useEffect } from 'react';
 
 function MyApp({ Component, pageProps }) {
   const [user, loading] = useAuthState(auth);
+
+  useEffect(() => {
+    if (user) {
+      console.log(user);
+      setDoc(doc(db, 'users', user.uid),
+        {
+          email: user.email,
+          name: user.displayName,
+          lastSeen: serverTimestamp(),
+          photoURL: user.photoURL,
+        },
+        { merge: true }
+      )
+    }
+    return () => {}
+  }, [user])
 
   if (loading) return <Loading />
 
