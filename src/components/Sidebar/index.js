@@ -9,12 +9,11 @@ import {
 import * as EmailValidator from 'email-validator';
 import { auth, db } from '../../../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { useCollection } from 'react-firebase-hooks/firestore';
-import { addDoc, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore/lite';
-import { Chat } from '../Chat';
+import { addDoc, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { Contact } from '../Contact';
 
 
-const Sidebar = () => {
+const Sidebar = ({ onClickContact }) => {
   const [user] = useAuthState(auth);
   const chatsRef = collection(db, 'chats');
   const userChatRef = query(chatsRef, where('users', "array-contains", `${user.email}`))
@@ -23,14 +22,15 @@ const Sidebar = () => {
 
   const getChats = async () => {
     const docSnap = await getDocs(userChatRef);
-    const data = docSnap.docs.map(doc => doc.data().users);
-    const dataFormatada = data.map(e => {
+    
+    const data = docSnap.docs.map(doc => {
+      const users = doc.data().users;
       return {
-        recipientEmail: e.filter(email => email !== user.email),
+        id: doc.id,
+        recipientEmail: users.filter(email => email !== user.email),
       }
-    })
-    console.log(dataFormatada);
-    setChatList(dataFormatada);
+    });
+    setChatList(data);
   }
 
   useEffect(() => {
@@ -95,7 +95,12 @@ const Sidebar = () => {
         <div>
         {
           chatList && chatList.map(chat => (
-            <Chat key={chat.id} id={chat.id} recipientEmail={chat.recipientEmail} />
+            <Contact
+              key={chat.id}
+              id={chat.id}
+              recipientEmail={chat.recipientEmail}
+              onClick={onClickContact}
+            />
           ))
         }
         </div>
