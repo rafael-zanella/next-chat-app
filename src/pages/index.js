@@ -21,10 +21,6 @@ export default function Home() {
   )
 }
 
-// export async function getServerSideProps(context) {
-
-// }
-
 const Container = styled.div`
   display: flex;
 `;
