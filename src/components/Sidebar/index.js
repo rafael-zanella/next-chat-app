@@ -9,36 +9,46 @@ import {
 import * as EmailValidator from 'email-validator';
 import { auth, db } from '../../../firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { addDoc, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import {
+  addDoc,
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  onSnapshot,
+} from 'firebase/firestore';
 import { Contact } from '../Contact';
 
 
 const Sidebar = ({ onClickContact }) => {
   const [user] = useAuthState(auth);
   const chatsRef = collection(db, 'chats');
-  const userChatRef = query(chatsRef, where('users', "array-contains", `${user.email}`))
+  const userChatQuery = query(chatsRef, where('users', "array-contains", `${user.email}`))
 
   const [chatList, setChatList ] = useState([]);
 
-  const getChats = async () => {
-    const docSnap = await getDocs(userChatRef);
-    
-    const data = docSnap.docs.map(doc => {
-      const users = doc.data().users;
-      return {
-        id: doc.id,
-        recipientEmail: users.filter(email => email !== user.email),
-      }
-    });
-    setChatList(data);
-  }
 
   useEffect(() => {
-    getChats();
-  }, [])
+    const chatsSnapshot = onSnapshot(userChatQuery, (querySnapshot) => {
+
+      const arr = [];
+
+      querySnapshot.forEach(doc => {
+        const users = doc.data().users;
+        arr.push({
+          id: doc.id,
+          recipientEmail: users.filter(email => email !== user.email),
+        });
+      });
+      setChatList(arr);
+    });
+    return () => chatsSnapshot();
+  }, []);
 
   const chatAlreadyExists = async (recipientEmail) => {
-    const docSnap = await getDocs(userChatRef);
+    const docSnap = await getDocs(userChatQuery);
     return !!docSnap.docs.find(chat => chat.data().users.find(user => user === recipientEmail));
   };
 
@@ -60,7 +70,6 @@ const Sidebar = ({ onClickContact }) => {
       await addDoc(collection(db, "chats"), {
         users: [user.email, input]
       })
-      await getChats();
     }
     
   }
