@@ -6,16 +6,18 @@ import { Sidebar } from "../components/Sidebar"
 
 export default function Home() {
   const [chatID, setChatID] = useState();
+  const [recipientInfo, setRecipientInfo] = useState();
   
-  const onClickContact = (id) => {
+  const onClickContact = (id, recipientInfo) => {
     setChatID(id);
+    setRecipientInfo(recipientInfo);
   }
 
   return (
     <Container>
       <Sidebar onClickContact={onClickContact} />
       <ChatContainer>
-        { chatID && <Chat id={chatID} /> }
+        { chatID && <Chat id={chatID} recipientInfo={recipientInfo} /> }
       </ChatContainer>
     </Container>
   )

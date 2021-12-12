@@ -20,7 +20,7 @@ export const Contact = ({ id, recipientEmail, onClick }) => {
   }
 
   const enterChat = () => {
-    onClick(id);
+    onClick(id, userInfo);
   }
 
 

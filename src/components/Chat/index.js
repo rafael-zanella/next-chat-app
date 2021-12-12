@@ -24,7 +24,7 @@ import { useEffect, useState } from "react";
 import Message from "../Message";
 
 
-export const Chat = ({ id }) => {
+export const Chat = ({ id, recipientInfo }) => {
   const [ user ] = useAuthState(auth);
   const [ input, setInput ] = useState('');
   const [ messages, setMessages ] = useState([]);
@@ -83,10 +83,10 @@ export const Chat = ({ id }) => {
   return (
     <Container>
       <Header>
-        <Avatar />
+        <Avatar src={recipientInfo?.photoURL ?? ''} />
 
         <HeaderInformation>
-          <h3>{id}</h3>
+          <h3>{recipientInfo?.name || recipientInfo?.email}</h3>
           <p>last seen ...</p>
         </HeaderInformation>
 
